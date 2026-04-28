@@ -1,68 +1,119 @@
 const TelegramBot = require("node-telegram-bot-api");
 const fs = require("fs");
 const path = require("path");
+const express = require("express");
 
+// 🌐 Dummy server (for Render)
+const app = express();
+app.get("/", (req, res) => res.send("Bot running 🚀"));
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => console.log("Server running"));
+
+// 🔐 Token
 const TOKEN = process.env.TOKEN;
 const bot = new TelegramBot(TOKEN, { polling: true });
 
+// 📂 Base path
 const basePath = __dirname;
+
+// Subject names
+const nameMap = {
+  acc: "Accountancy",
+  eco: "Economics",
+  bst: "Business Studies"
+};
 
 // 🔹 START
 bot.onText(/\/start/, (msg) => {
-  bot.sendMessage(msg.chat.id, "📚 LP Vault\nSelect Class:", {
+  sendClassMenu(msg.chat.id);
+});
+
+// 🔹 CLASS MENU
+function sendClassMenu(chatId) {
+  bot.sendMessage(chatId, "📚 LP Vault\nby Learners' Point\n\nSelect Class:", {
     reply_markup: {
       inline_keyboard: [
-        [{ text: "Class 11", callback_data: "c11" }],
-        [{ text: "Class 12", callback_data: "c12" }]
+        [{ text: "Class 11", callback_data: "c-11" }],
+        [{ text: "Class 12", callback_data: "c-12" }]
       ]
     }
   });
-});
+}
 
-// 🔹 HANDLE BUTTONS
+// 🔹 BUTTON HANDLER
 bot.on("callback_query", (query) => {
   const chatId = query.message.chat.id;
   const data = query.data;
 
   try {
 
-    // CLASS → SUBJECT
-    if (data === "c11" || data === "c12") {
+    // 🔙 Back to classes
+    if (data === "back_classes") {
+      return sendClassMenu(chatId);
+    }
 
-      const allFiles = fs.readdirSync(basePath);
+    // 📘 Class → Subjects
+    if (data === "c-11" || data === "c-12") {
+      const folderPath = path.join(basePath, data);
 
-      let filtered;
-
-      if (data === "c11") {
-        filtered = allFiles.filter(f => f.includes("C 11"));
-      } else {
-        filtered = allFiles.filter(f => f.includes("C 12"));
+      if (!fs.existsSync(folderPath)) {
+        return bot.sendMessage(chatId, "❌ Class folder missing on server");
       }
 
-      const buttons = filtered.map(file => [
-  { text: file, callback_data: `file:${file}` }
-]);
+      const subjects = fs.readdirSync(folderPath);
+
+      const buttons = subjects.map(sub => [
+        {
+          text: nameMap[sub] || sub.toUpperCase(),
+          callback_data: `${data}/${sub}`
+        }
+      ]);
+
+      buttons.push([{ text: "⬅ Back", callback_data: "back_classes" }]);
+
+      return bot.sendMessage(chatId, "Select Subject:", {
+        reply_markup: { inline_keyboard: buttons }
+      });
+    }
+
+    // 📂 Subject → Files
+    if (data.split("/").length === 2) {
+      const folderPath = path.join(basePath, data);
+
+      if (!fs.existsSync(folderPath)) {
+        return bot.sendMessage(chatId, "❌ Subject folder missing");
+      }
+
+      const files = fs.readdirSync(folderPath);
+
+      const buttons = files.map(file => [
+        {
+          text: file,
+          callback_data: `${data}/${file}`
+        }
+      ]);
+
+      const classFolder = data.split("/")[0];
+      buttons.push([{ text: "⬅ Back", callback_data: classFolder }]);
 
       return bot.sendMessage(chatId, "Select File:", {
         reply_markup: { inline_keyboard: buttons }
       });
     }
 
-    // SEND PDF
-    if (data.startsWith("file:")) {
-  const fileName = data.replace("file:", "");
-  const filePath = path.join(basePath, fileName);
+    // 📄 Send PDF
+    if (data.endsWith(".pdf")) {
+      const filePath = path.join(basePath, data);
 
-  if (fs.existsSync(filePath)) {
-    return bot.sendDocument(chatId, filePath);
-  } else {
-    return bot.sendMessage(chatId, "❌ File not found.");
-  }
-}
+      if (fs.existsSync(filePath)) {
+        return bot.sendDocument(chatId, filePath);
+      } else {
+        return bot.sendMessage(chatId, "❌ File not found.");
+      }
+    }
 
   } catch (err) {
     console.log(err);
     bot.sendMessage(chatId, "⚠️ Error loading content.");
   }
-});
 });
