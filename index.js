@@ -40,8 +40,8 @@ bot.on("callback_query", (query) => {
       }
 
       const buttons = filtered.map(file => [
-        { text: file, callback_data: file }
-      ]);
+  { text: file, callback_data: `file:${file}` }
+]);
 
       return bot.sendMessage(chatId, "Select File:", {
         reply_markup: { inline_keyboard: buttons }
@@ -49,18 +49,20 @@ bot.on("callback_query", (query) => {
     }
 
     // SEND PDF
-    if (data.endsWith(".pdf")) {
-      const filePath = path.join(basePath, data);
+    if (data.startsWith("file:")) {
+  const fileName = data.replace("file:", "");
+  const filePath = path.join(basePath, fileName);
 
-      if (fs.existsSync(filePath)) {
-        return bot.sendDocument(chatId, filePath);
-      } else {
-        return bot.sendMessage(chatId, "❌ File not found.");
-      }
-    }
+  if (fs.existsSync(filePath)) {
+    return bot.sendDocument(chatId, filePath);
+  } else {
+    return bot.sendMessage(chatId, "❌ File not found.");
+  }
+}
 
   } catch (err) {
     console.log(err);
     bot.sendMessage(chatId, "⚠️ Error loading content.");
   }
+});
 });
