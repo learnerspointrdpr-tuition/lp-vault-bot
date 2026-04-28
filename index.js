@@ -2,7 +2,7 @@ const TelegramBot = require("node-telegram-bot-api");
 const fs = require("fs");
 const path = require("path");
 
-// 🔐 Token from Render Environment
+// 🔐 Token from Render
 const TOKEN = process.env.TOKEN;
 
 if (!TOKEN) {
@@ -12,54 +12,56 @@ if (!TOKEN) {
 
 const bot = new TelegramBot(TOKEN, { polling: true });
 
-// 📂 Base Path
+// 📂 Base path
 const basePath = __dirname;
 
-// Subject name mapping
+// 📘 Subject names
 const nameMap = {
-  acc: "📊 Accountancy",
-  eco: "📈 Economics",
-  bst: "📘 Business Studies"
+  acc: "Accountancy",
+  eco: "Economics",
+  bst: "Business Studies",
+  maths: "Mathematics",
+  science: "Science"
 };
 
-// 🔹 START COMMAND
+// 🔹 START
 bot.onText(/\/start/, (msg) => {
   sendClassMenu(msg.chat.id);
 });
 
-// 🔹 CLASS MENU
+// 🔹 CLASS MENU (DYNAMIC)
 function sendClassMenu(chatId) {
-  bot.sendMessage(chatId, "📚 *LP Vault*\nby Learners' Point\n\nSelect Class:", {
-    parse_mode: "Markdown",
+  const classes = fs.readdirSync(basePath).filter(f => f.startsWith("c-"));
+
+  const buttons = classes.map(cls => [
+    {
+      text: cls.replace("c-", "Class "),
+      callback_data: cls
+    }
+  ]);
+
+  bot.sendMessage(chatId, "📚 LP Vault\nby Learners' Point\n\nSelect Class:", {
     reply_markup: {
-      inline_keyboard: [
-        [{ text: "🎓 Class 11", callback_data: "c-11" }],
-        [{ text: "🎓 Class 12", callback_data: "c-12" }]
-      ]
+      inline_keyboard: buttons
     }
   });
 }
 
-// 🔹 BUTTON HANDLER
+// 🔹 HANDLE BUTTONS
 bot.on("callback_query", (query) => {
   const chatId = query.message.chat.id;
   const data = query.data;
 
   try {
-    // 🔸 Back to classes
+
+    // 🔸 BACK TO CLASS MENU
     if (data === "back_classes") {
       return sendClassMenu(chatId);
     }
 
-    // 🔸 Class → Subjects
-    if (data === "c-11" || data === "c-12") {
-      const subjectPath = path.join(basePath, data);
-
-      if (!fs.existsSync(subjectPath)) {
-        return bot.sendMessage(chatId, "❌ Class folder not found.");
-      }
-
-      const subjects = fs.readdirSync(subjectPath);
+    // 🔸 CLASS → SUBJECTS
+    if (data.startsWith("c-")) {
+      const subjects = fs.readdirSync(path.join(basePath, data));
 
       const buttons = subjects.map(sub => [
         {
@@ -70,24 +72,14 @@ bot.on("callback_query", (query) => {
 
       buttons.push([{ text: "⬅ Back", callback_data: "back_classes" }]);
 
-      return bot.sendMessage(chatId, "📂 Select Subject:", {
+      return bot.sendMessage(chatId, "Select Subject:", {
         reply_markup: { inline_keyboard: buttons }
       });
     }
 
-    // 🔸 Subject → Files
+    // 🔸 SUBJECT → FILES
     if (data.split("/").length === 2) {
-      const filesPath = path.join(basePath, data);
-
-      if (!fs.existsSync(filesPath)) {
-        return bot.sendMessage(chatId, "❌ Subject folder not found.");
-      }
-
-      const files = fs.readdirSync(filesPath).filter(f => f.endsWith(".pdf"));
-
-      if (files.length === 0) {
-        return bot.sendMessage(chatId, "⚠️ No files found.");
-      }
+      const files = fs.readdirSync(path.join(basePath, data));
 
       const buttons = files.map(file => [
         {
@@ -100,12 +92,12 @@ bot.on("callback_query", (query) => {
 
       buttons.push([{ text: "⬅ Back", callback_data: classFolder }]);
 
-      return bot.sendMessage(chatId, "📄 Select File:", {
+      return bot.sendMessage(chatId, "Select File:", {
         reply_markup: { inline_keyboard: buttons }
       });
     }
 
-    // 🔸 Send PDF
+    // 🔸 SEND PDF
     if (data.endsWith(".pdf")) {
       const filePath = path.join(basePath, data);
 
@@ -117,7 +109,8 @@ bot.on("callback_query", (query) => {
     }
 
   } catch (err) {
-    console.error(err);
+    console.log(err);
     bot.sendMessage(chatId, "⚠️ Error loading content.");
   }
+});
 });
