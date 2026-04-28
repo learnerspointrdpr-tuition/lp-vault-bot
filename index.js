@@ -2,7 +2,6 @@ const TelegramBot = require("node-telegram-bot-api");
 const fs = require("fs");
 const path = require("path");
 
-// 🔐 Token from Render
 const TOKEN = process.env.TOKEN;
 
 if (!TOKEN) {
@@ -12,10 +11,8 @@ if (!TOKEN) {
 
 const bot = new TelegramBot(TOKEN, { polling: true });
 
-// 📂 Base path
 const basePath = __dirname;
 
-// 📘 Subject names
 const nameMap = {
   acc: "Accountancy",
   eco: "Economics",
@@ -24,12 +21,10 @@ const nameMap = {
   science: "Science"
 };
 
-// 🔹 START
 bot.onText(/\/start/, (msg) => {
   sendClassMenu(msg.chat.id);
 });
 
-// 🔹 CLASS MENU (DYNAMIC)
 function sendClassMenu(chatId) {
   const classes = fs.readdirSync(basePath).filter(f => f.startsWith("c-"));
 
@@ -40,26 +35,21 @@ function sendClassMenu(chatId) {
     }
   ]);
 
-  bot.sendMessage(chatId, "📚 LP Vault\nby Learners' Point\n\nSelect Class:", {
-    reply_markup: {
-      inline_keyboard: buttons
-    }
+  bot.sendMessage(chatId, "📚 LP Vault\n\nSelect Class:", {
+    reply_markup: { inline_keyboard: buttons }
   });
 }
 
-// 🔹 HANDLE BUTTONS
 bot.on("callback_query", (query) => {
   const chatId = query.message.chat.id;
   const data = query.data;
 
   try {
 
-    // 🔸 BACK TO CLASS MENU
     if (data === "back_classes") {
       return sendClassMenu(chatId);
     }
 
-    // 🔸 CLASS → SUBJECTS
     if (data.startsWith("c-")) {
       const subjects = fs.readdirSync(path.join(basePath, data));
 
@@ -77,7 +67,6 @@ bot.on("callback_query", (query) => {
       });
     }
 
-    // 🔸 SUBJECT → FILES
     if (data.split("/").length === 2) {
       const files = fs.readdirSync(path.join(basePath, data));
 
@@ -97,7 +86,6 @@ bot.on("callback_query", (query) => {
       });
     }
 
-    // 🔸 SEND PDF
     if (data.endsWith(".pdf")) {
       const filePath = path.join(basePath, data);
 
@@ -112,5 +100,4 @@ bot.on("callback_query", (query) => {
     console.log(err);
     bot.sendMessage(chatId, "⚠️ Error loading content.");
   }
-});
 });
