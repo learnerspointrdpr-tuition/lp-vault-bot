@@ -11,7 +11,8 @@ if (!TOKEN) {
 
 const bot = new TelegramBot(TOKEN, { polling: true });
 
-const basePath = __dirname;
+// 🔥 FIXED BASE PATH (important for Render)
+const basePath = path.resolve();
 
 const nameMap = {
   acc: "Accountancy",
@@ -102,7 +103,7 @@ bot.on("callback_query", (query) => {
 
     // 🔸 SEND PDF
     if (data.toLowerCase().endsWith(".pdf")) {
-      const filePath = path.join(basePath, data);
+      const filePath = path.join(basePath, data.replace(/\\/g, "/"));
 
       if (fs.existsSync(filePath)) {
         return bot.sendDocument(chatId, filePath);
