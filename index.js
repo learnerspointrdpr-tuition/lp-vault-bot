@@ -13,7 +13,6 @@ const bot = new TelegramBot(TOKEN, { polling: true });
 
 const basePath = path.resolve();
 
-// 🎯 Subject Names (Premium UI)
 const nameMap = {
   acc: "📊 Accountancy",
   eco: "📈 Economics",
@@ -22,7 +21,6 @@ const nameMap = {
   science: "🔬 Science"
 };
 
-// 🎯 Clean File Name Formatter
 function formatFileName(file) {
   return file
     .replace(/[-_]/g, " ")
@@ -62,17 +60,19 @@ function sendClassMenu(chatId) {
 
 // 🔹 HANDLE BUTTONS
 bot.on("callback_query", (query) => {
+  bot.answerCallbackQuery(query.id); // ✅ FIX FOR DUPLICATE / EMPTY ISSUE
+
   const chatId = query.message.chat.id;
   const data = query.data;
 
   try {
 
-    // 🔙 Back to Classes
+    // 🔙 BACK TO CLASS
     if (data === "back_classes") {
       return sendClassMenu(chatId);
     }
 
-    // 📚 Class → Subjects
+    // 📚 CLASS → SUBJECTS
     if (data.startsWith("c-")) {
       const subjects = fs
         .readdirSync(path.join(basePath, data))
@@ -100,7 +100,7 @@ bot.on("callback_query", (query) => {
       });
     }
 
-    // 📘 Subject → Files
+    // 📘 SUBJECT → FILES
     if (data.split("/").length === 2) {
       const files = fs
         .readdirSync(path.join(basePath, data))
@@ -139,7 +139,7 @@ bot.on("callback_query", (query) => {
       });
     }
 
-    // 📄 Send PDF
+    // 📄 SEND PDF
     if (data.toLowerCase().endsWith(".pdf")) {
       const filePath = path.join(basePath, data.replace(/\\/g, "/"));
 
