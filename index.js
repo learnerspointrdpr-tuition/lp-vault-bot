@@ -1,6 +1,7 @@
 const TelegramBot = require("node-telegram-bot-api");
 const fs = require("fs");
 const path = require("path");
+const http = require("http");
 
 const TOKEN = process.env.TOKEN;
 
@@ -11,8 +12,10 @@ if (!TOKEN) {
 
 const bot = new TelegramBot(TOKEN, { polling: true });
 
+// 🔥 Important for Render
 const basePath = path.resolve();
 
+// 🎯 Subject Names
 const nameMap = {
   acc: "📊 Accountancy",
   eco: "📈 Economics",
@@ -21,6 +24,7 @@ const nameMap = {
   science: "🔬 Science"
 };
 
+// 🎯 Clean File Names
 function formatFileName(file) {
   return file
     .replace(/[-_]/g, " ")
@@ -60,19 +64,19 @@ function sendClassMenu(chatId) {
 
 // 🔹 HANDLE BUTTONS
 bot.on("callback_query", (query) => {
-  bot.answerCallbackQuery(query.id); // ✅ FIX FOR DUPLICATE / EMPTY ISSUE
+  bot.answerCallbackQuery(query.id); // ✅ Prevent duplicate bug
 
   const chatId = query.message.chat.id;
   const data = query.data;
 
   try {
 
-    // 🔙 BACK TO CLASS
+    // 🔙 Back
     if (data === "back_classes") {
       return sendClassMenu(chatId);
     }
 
-    // 📚 CLASS → SUBJECTS
+    // 📚 Class → Subjects
     if (data.startsWith("c-")) {
       const subjects = fs
         .readdirSync(path.join(basePath, data))
@@ -100,7 +104,7 @@ bot.on("callback_query", (query) => {
       });
     }
 
-    // 📘 SUBJECT → FILES
+    // 📘 Subject → Files
     if (data.split("/").length === 2) {
       const files = fs
         .readdirSync(path.join(basePath, data))
@@ -139,7 +143,7 @@ bot.on("callback_query", (query) => {
       });
     }
 
-    // 📄 SEND PDF
+    // 📄 Send PDF
     if (data.toLowerCase().endsWith(".pdf")) {
       const filePath = path.join(basePath, data.replace(/\\/g, "/"));
 
@@ -157,4 +161,17 @@ bot.on("callback_query", (query) => {
     console.log("ERROR:", err);
     bot.sendMessage(chatId, "⚠️ Something went wrong. Please try again.");
   }
+});
+
+
+// 🔥 REQUIRED FOR RENDER (DO NOT REMOVE)
+const server = http.createServer((req, res) => {
+  res.writeHead(200, { "Content-Type": "text/plain" });
+  res.end("LP Vault Bot Running 🚀");
+});
+
+const PORT = process.env.PORT || 3000;
+
+server.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
 });
