@@ -21,12 +21,17 @@ const nameMap = {
   science: "Science"
 };
 
+// 🔹 START
 bot.onText(/\/start/, (msg) => {
   sendClassMenu(msg.chat.id);
 });
 
+// 🔹 CLASS MENU
 function sendClassMenu(chatId) {
-  const classes = fs.readdirSync(basePath).filter(f => f.startsWith("c-"));
+  const classes = fs
+    .readdirSync(basePath)
+    .filter(f => f.startsWith("c-"))
+    .sort();
 
   const buttons = classes.map(cls => [
     {
@@ -35,23 +40,28 @@ function sendClassMenu(chatId) {
     }
   ]);
 
-  bot.sendMessage(chatId, "📚 LP Vault\n\nSelect Class:", {
+  bot.sendMessage(chatId, "📚 LP Vault\nby Learners' Point\n\nSelect Class:", {
     reply_markup: { inline_keyboard: buttons }
   });
 }
 
+// 🔹 HANDLE BUTTONS
 bot.on("callback_query", (query) => {
   const chatId = query.message.chat.id;
   const data = query.data;
 
   try {
 
+    // 🔸 BACK TO CLASS MENU
     if (data === "back_classes") {
       return sendClassMenu(chatId);
     }
 
+    // 🔸 CLASS → SUBJECTS
     if (data.startsWith("c-")) {
-      const subjects = fs.readdirSync(path.join(basePath, data));
+      const subjects = fs
+        .readdirSync(path.join(basePath, data))
+        .filter(f => fs.statSync(path.join(basePath, data, f)).isDirectory());
 
       const buttons = subjects.map(sub => [
         {
@@ -62,13 +72,17 @@ bot.on("callback_query", (query) => {
 
       buttons.push([{ text: "⬅ Back", callback_data: "back_classes" }]);
 
-      return bot.sendMessage(chatId, "Select Subject:", {
+      return bot.sendMessage(chatId, "📘 Select Subject:", {
         reply_markup: { inline_keyboard: buttons }
       });
     }
 
+    // 🔸 SUBJECT → FILES
     if (data.split("/").length === 2) {
-      const files = fs.readdirSync(path.join(basePath, data));
+      const files = fs
+        .readdirSync(path.join(basePath, data))
+        .filter(file => file.toLowerCase().endsWith(".pdf"))
+        .sort();
 
       const buttons = files.map(file => [
         {
@@ -81,12 +95,13 @@ bot.on("callback_query", (query) => {
 
       buttons.push([{ text: "⬅ Back", callback_data: classFolder }]);
 
-      return bot.sendMessage(chatId, "Select File:", {
+      return bot.sendMessage(chatId, "📄 Select File:", {
         reply_markup: { inline_keyboard: buttons }
       });
     }
 
-    if (data.endsWith(".pdf")) {
+    // 🔸 SEND PDF
+    if (data.toLowerCase().endsWith(".pdf")) {
       const filePath = path.join(basePath, data);
 
       if (fs.existsSync(filePath)) {
@@ -97,7 +112,7 @@ bot.on("callback_query", (query) => {
     }
 
   } catch (err) {
-    console.log(err);
+    console.log("ERROR:", err);
     bot.sendMessage(chatId, "⚠️ Error loading content.");
   }
 });
