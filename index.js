@@ -24,7 +24,7 @@ const nameMap = {
   science: "🔬 Science"
 };
 
-// 🎯 Clean File Names
+// 🎯 Clean File Name
 function formatFileName(file) {
   return file
     .replace(/[-_]/g, " ")
@@ -64,20 +64,20 @@ function sendClassMenu(chatId) {
 
 // 🔹 HANDLE BUTTONS
 bot.on("callback_query", (query) => {
-  bot.answerCallbackQuery(query.id); // ✅ Prevent duplicate bug
+  bot.answerCallbackQuery(query.id);
 
   const chatId = query.message.chat.id;
   const data = query.data;
 
   try {
 
-    // 🔙 Back
+    // 🔙 BACK TO CLASS
     if (data === "back_classes") {
       return sendClassMenu(chatId);
     }
 
-    // 📚 Class → Subjects
-    if (data.startsWith("c-")) {
+    // 📚 CLASS → SUBJECTS (FIXED CONDITION)
+    if (data.startsWith("c-") && !data.includes("/")) {
       const subjects = fs
         .readdirSync(path.join(basePath, data))
         .filter(f =>
@@ -104,7 +104,7 @@ bot.on("callback_query", (query) => {
       });
     }
 
-    // 📘 Subject → Files
+    // 📘 SUBJECT → FILES
     if (data.split("/").length === 2) {
       const files = fs
         .readdirSync(path.join(basePath, data))
@@ -143,7 +143,7 @@ bot.on("callback_query", (query) => {
       });
     }
 
-    // 📄 Send PDF
+    // 📄 SEND PDF
     if (data.toLowerCase().endsWith(".pdf")) {
       const filePath = path.join(basePath, data.replace(/\\/g, "/"));
 
@@ -164,7 +164,7 @@ bot.on("callback_query", (query) => {
 });
 
 
-// 🔥 REQUIRED FOR RENDER (DO NOT REMOVE)
+// 🔥 REQUIRED FOR RENDER
 const server = http.createServer((req, res) => {
   res.writeHead(200, { "Content-Type": "text/plain" });
   res.end("LP Vault Bot Running 🚀");
