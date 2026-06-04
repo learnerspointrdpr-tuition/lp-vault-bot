@@ -21,7 +21,15 @@ const nameMap = {
   eco: "📈 Economics",
   bst: "🏢 Business Studies",
   maths: "📐 Mathematics",
-  science: "🔬 Science"
+  science: "🔬 Science",
+  english: "📖 English",
+  hindi: "📝 Hindi",
+  sst: "🌍 Social Science",
+  "ncert-books": "📚 NCERT Books",
+  "ncert-solutions": "✅ NCERT Solutions",
+  "sample-papers": "📄 Sample Papers",
+  "important-questions": "⭐ Important Questions",
+  pyqs: "📝 Previous Year Questions"
 };
 
 // 🎯 Clean File Name
@@ -43,7 +51,7 @@ function sendClassMenu(chatId) {
   const classes = fs
     .readdirSync(basePath)
     .filter(f => f.startsWith("c-"))
-    .sort();
+    .sort((a, b) => parseInt(a.split("-")[1]) - parseInt(b.split("-")[1]));
 
   const buttons = classes.map(cls => [
     {
@@ -76,7 +84,7 @@ bot.on("callback_query", (query) => {
       return sendClassMenu(chatId);
     }
 
-    // 📚 CLASS → SUBJECTS (FIXED CONDITION)
+    // 📚 CLASS → SUBJECTS
     if (data.startsWith("c-") && !data.includes("/")) {
       const subjects = fs
         .readdirSync(path.join(basePath, data))
@@ -162,7 +170,6 @@ bot.on("callback_query", (query) => {
     bot.sendMessage(chatId, "⚠️ Something went wrong. Please try again.");
   }
 });
-
 
 // 🔥 REQUIRED FOR RENDER
 const server = http.createServer((req, res) => {
